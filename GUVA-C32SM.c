@@ -28,13 +28,38 @@ static const uint8_t UVA_MSB_GUVA = 0x16;
 #define Res_100 0b00000011
 
 
+//Sensor Range
+#define Range_x1 0b00000000
+#define Range_x2 0b00000001
+#define Range_x4 0b00000010
+#define Range_x8 0b00000011
+#define Range_x16 0b00000100
+#define Range_x32 0b00000101
+#define Range_x64 0b00000110
+#define Range_x128 0b00000111
+
+//sleep duration
+#define Time_2 0b00000000
+#define Time_4 0b00000001
+#define Time_8 0b00000010
+#define Time_16 0b00000011
+#define Time_32 0b00000100
+#define Time_64 0b00000101
+#define Time_128 0b00000110
+#define Time_256 0b00000111
+
+//reset
+#define RESET 0xA5
+
+
 //===========================================================================
-//							Initialization of Sensor
+//							Sensor Initialization
 //===========================================================================
 
 HAL_StatusTypeDef Start_GUVA_C32 (I2C_HandleTypeDef * hi2c){
 	uint8_t buf[1];
 	HAL_StatusTypeDef ret;
+
 	buf[0] = REG_ID_GUVA;
 
 	ret = HAL_I2C_Master_Transmit(hi2c, REG_GUVA, buf, 1, 10);
@@ -56,6 +81,7 @@ HAL_StatusTypeDef Start_GUVA_C32 (I2C_HandleTypeDef * hi2c){
 HAL_StatusTypeDef Mode_GUVA_C32 (I2C_HandleTypeDef * hi2c, uint8_t MODE, uint8_t PMODE){
 	uint8_t buf[2];
 	HAL_StatusTypeDef ret;
+
 	buf [0] = MODE_GUVA;
 	buf [1] = MODE + PMODE;
 
@@ -73,6 +99,7 @@ HAL_StatusTypeDef Mode_GUVA_C32 (I2C_HandleTypeDef * hi2c, uint8_t MODE, uint8_t
 HAL_StatusTypeDef Resolution_GUVA_C32 (I2C_HandleTypeDef * hi2c, uint8_t RES){
 	uint8_t buf[2];
 	HAL_StatusTypeDef ret;
+
 	buf [0] = RES_GUVA;
 	buf [1] = RES;
 
@@ -83,6 +110,122 @@ HAL_StatusTypeDef Resolution_GUVA_C32 (I2C_HandleTypeDef * hi2c, uint8_t RES){
 	return HAL_OK;
 }
 
+
+//===========================================================================
+//								Sensor Range
+//===========================================================================
+
+HAL_StatusTypeDef Range_GUVA_C32 (I2C_HandleTypeDef * hi2c, uint8_t RANGE){
+
+	uint8_t buf[2];
+	HAL_StatusTypeDef ret;
+
+	buf [0] = RANGE_GUVA;
+	buf [1] = RANGE;
+
+	ret = HAL_I2C_Master_Transmit(hi2c, REG_GUVA, buf, 2, 10);
+	if (ret != HAL_OK){
+		return ret;
+	}
+	return HAL_OK;
+}
+
+
+//===========================================================================
+//						Sensor Sleep Duration
+//===========================================================================
+
+HAL_StatusTypeDef Sleep_GUVA_C32(I2C_HandleTypeDef * hi2c, uint8_t TIME){
+
+	uint8_t buf[2];
+	HAL_StatusTypeDef ret;
+
+	buf [0] = MODE_CTL_GUVA;
+	buf [1] = TIME;
+
+	ret = HAL_I2C_Master_Transmit(hi2c, REG_GUVA, buf, 2, 10);
+	if (ret != HAL_OK){
+		return ret;
+	}
+	return HAL_OK;
+}
+
+//===========================================================================
+//						Sensor Reset
+//===========================================================================
+
+HAL_StatusTypeDef Reset_GUVA_C32 (I2C_HandleTypeDef * hi2c){
+
+	uint8_t buf[2];
+	HAL_StatusTypeDef ret;
+
+	buf [0] = SOFT_RESET_GUVA;
+	buf [1] = RESET;
+
+	ret = HAL_I2C_Master_Transmit(hi2c, REG_GUVA, buf, 2, 10);
+	if (ret != HAL_OK){
+		return ret;
+	}
+	return HAL_OK;
+}
+
+
+//===========================================================================
+//							Sensor Receive
+//===========================================================================
+
+HAL_StatusTypeDef Receive_GUVA_C32 (I2C_HandleTypeDef * hi2c, float* UVA){
+
+	uint8_t buf[1];
+	uint8_t save_buf;
+	uint16_t UVA_RES;
+	HAL_StatusTypeDef ret;
+
+	buf[0] = UVA_LSB_GUVA;
+
+	ret = HAL_I2C_Master_Transmit(hi2c, REG_GUVA, buf, 1, 10);
+	if(ret != HAL_OK){
+		return ret;
+	}
+		else{
+			ret = HAL_I2C_Master_Receive(hi2c, REG_GUVA, buf, 1, 10);
+			if(ret != HAL_OK){
+				return ret;
+			}
+			else{
+				save_buf = buf[0];
+				buf[0] = UVA_MSB_GUVA;
+
+				ret = HAL_I2C_Master_Transmit(hi2c, REG_GUVA, buf, 1, 10);
+				if(ret != HAL_OK){
+					return ret;
+				}
+				else{
+					ret = HAL_I2C_Master_Receive(hi2c, REG_GUVA, buf, 1, 10);
+					if(ret != HAL_OK){
+						return ret;
+					}
+					else{
+						UVA_RES = buf[0] + save_buf;		// Da uma olhada pra ver se isso aqui funciona
+						*UVA = Converter (UVA_RES);
+					}
+				}
+			}
+		}
+	return HAL_OK;
+}
+
+//===========================================================================
+//						Sensor Reset
+//===========================================================================
+
+float Converter (uint16_t UVA_RES){
+
+	float res;
+	res = ((UVA_RES*100)/255);
+	return res;
+
+}
 
 
 
