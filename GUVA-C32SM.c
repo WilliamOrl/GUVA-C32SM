@@ -21,6 +21,12 @@ static const uint8_t UVA_MSB_GUVA = 0x16;
 #define Auto_shutdow_mode 0b0000010;
 #define Shutdown_mode 0b00000011;
 
+// Sensor Resolutions
+#define Res_800 0b00000000
+#define Res_400 0b00000001
+#define Res_200 0b00000010
+#define Res_100 0b00000011
+
 
 //===========================================================================
 //							Initialization of Sensor
@@ -59,3 +65,24 @@ HAL_StatusTypeDef Mode_GUVA_C32 (I2C_HandleTypeDef * hi2c, uint8_t MODE, uint8_t
 	}
 	return HAL_OK;
 }
+
+//===========================================================================
+//								Sensor Resolution
+//===========================================================================
+
+HAL_StatusTypeDef Resolution_GUVA_C32 (I2C_HandleTypeDef * hi2c, uint8_t RES){
+	uint8_t buf[2];
+	HAL_StatusTypeDef ret;
+	buf [0] = RES_GUVA;
+	buf [1] = RES;
+
+	ret = HAL_I2C_Master_Transmit(hi2c, REG_GUVA, buf, 2, 10);
+	if (ret != HAL_OK){
+		return ret;
+	}
+	return HAL_OK;
+}
+
+
+
+
