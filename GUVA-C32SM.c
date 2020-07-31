@@ -216,7 +216,7 @@ HAL_StatusTypeDef Receive_GUVA_C32 (I2C_HandleTypeDef * hi2c, float* UVA){
 }
 
 //===========================================================================
-//						Sensor Reset
+//						Converter
 //===========================================================================
 
 float Converter (uint16_t UVA_RES){
